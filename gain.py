@@ -1,13 +1,12 @@
 import wave
-import struct
 import audioop
 
 
-
+# returns bistream if in bitstream mode, None otherwise.
 def gain(mode, data, gain):
     if mode == 'b':
             sampWidth = 2
-            gainFromFrames(data, gain, sampWidth)
+            gainBitstream(data, gain, sampWidth)
     elif mode == 'f':
         gainWav(data, gain)
 
@@ -15,7 +14,10 @@ def gain(mode, data, gain):
 def gainFromFrames(curFrame, gain, sampWidth):
     return(audioop.mul(curFrame, sampWidth, gain))
     
-    
+def gainBitstream(bitstream, gain, sampWidth):
+    while not (bitstream == None):
+        return gainFromFrames(bitstream, gain, sampWidth)
+    return None
 
 def gainWav(filename, gain):
 
