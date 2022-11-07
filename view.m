@@ -14,6 +14,6 @@ f = fft(y);
 
 freq = Fs*((0:L)/L);
 
-%figure
-%plot(freq, f(:, 1))
-%plot(freq, f(:, 2))
+figure
+plot(freq, f(:, 1))
+plot(freq, f(:, 2))

@@ -11,55 +11,55 @@ def compress(mode, data, compression):
         compressWav(data, compression)
 
 
-def compressFromFrames(curFrames, compression, sampWidth):
-    (min, max) = audioop.minmax(curFrames, sampWidth)
+def compressFromFrames(curFrames, compression, min, max, avg):
 
-    avg = audioop.avg(curFrames, sampWidth)
     curval = int.from_bytes(curFrames, "little")
     
-    mask1 = 0b000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111111111
-    mask2 = 0b000000000000000000000000000000000000000000000000000000000000000000000000111111111111000000000000
-    mask3 = 0b000000000000000000000000000000000000000000000000000000000000111111111111000000000000000000000000
-    mask4 = 0b000000000000000000000000000000000000000000000000111111111111000000000000000000000000000000000000
-    mask5 = 0b000000000000000000000000000000000000111111111111000000000000000000000000000000000000000000000000
-    mask6 = 0b000000000000000000000000111111111111000000000000000000000000000000000000000000000000000000000000
-    mask7 = 0b000000000000111111111111000000000000000000000000000000000000000000000000000000000000000000000000
-    mask8 = 0b111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    mask1 = 0b111111111111
+    mask2 = mask1 << 12
+    mask3 = mask2 << 12
+    mask4 = mask3 << 12
+    mask5 = mask4 << 12
+    mask6 = mask5 << 12
+    mask7 = mask6 << 12
+    mask8 = mask7 << 12
+    mask9 = mask8 << 12
+    mask10 = mask9 << 12
 
 
     val1 = (curval & mask1)
     val2 = ((curval & mask2) >> 12)
-    val3 = ((curval & mask3) >> 24)
-    val4 = ((curval & mask4) >> 36)
-    val5 = ((curval & mask5) >> 48)
-    val6 = ((curval & mask6) >> 60)
-    val7 = ((curval & mask7) >> 72) 
-    val8 = ((curval & mask8) >> 84)
 
 
-    value = (val1, val2, val3, val4, val5, val6, val7, val8)
+
+    value = (val1, val2)
     returnFrame = 0b0
     i = 0
-    maxAllowable = 4095
+    maxAllowable = 1023
+    minAllowable = -maxAllowable
     for val in value:
         addValue = None
         if val <= avg/2 and val >= min:
-            addValue = round(val*(1.2*compression))
+            addValue = round(val+(2*compression))
             if addValue > maxAllowable: addValue = maxAllowable
+            if addValue < minAllowable: addValue = minAllowable
         elif val >= avg/2 and val <= avg:
-            addValue = round(val*(1.1*compression))
+            addValue = round(val+(compression))
             if addValue > maxAllowable: addValue = maxAllowable
+            if addValue < minAllowable: addValue = minAllowable
         elif val >= avg and val <= 1.5*avg:
-            addValue = round(val*(1/compression))
+            addValue = round(val-(compression))
             if addValue > maxAllowable: addValue = maxAllowable
+            if addValue < minAllowable: addValue = minAllowable
         elif val >= 1.5*avg and val <= max:
-            addValue = round(val*(1/(1.1*compression)))
+            addValue = round(val-(2*compression))
             if addValue > maxAllowable: addValue = maxAllowable
+            if addValue < minAllowable: addValue = minAllowable
         elif addValue is None: 
             addValue = round(val)
         returnFrame = returnFrame | addValue << 12*i
         i += 1
-    returnFrame = returnFrame.to_bytes(12, "little")
+    returnFrame = returnFrame.to_bytes(3, "little", signed=True)
     return returnFrame
     
 
@@ -81,12 +81,18 @@ def compressWav(filename, compression):
     wavWrite.setsampwidth(wavRead.getsampwidth())
     wavWrite.setframerate(wavRead.getframerate())
 
-    readFrame = wavRead.readframes(4)
+
+    frames = wavRead.readframes(nframes)
+    (min, max) = audioop.minmax(frames, sampWidth)
+    avg = audioop.avg(frames, sampWidth)
+    wavRead.rewind()
+
+    readFrame = wavRead.readframes(1)
     i = 0
     while readFrame:
-        writeFrame = compressFromFrames(readFrame, compression, sampWidth)
+        writeFrame = compressFromFrames(readFrame, compression, min, max, avg)
         wavWrite.writeframes(writeFrame)
-        readFrame = wavRead.readframes(4)
+        readFrame = wavRead.readframes(1)
         i += 1
 
 
