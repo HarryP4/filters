@@ -15,51 +15,54 @@ def compressFromFrames(curFrames, compression, min, max, avg):
 
     curval = int.from_bytes(curFrames, "little")
     
-    mask1 = 0b111111111111
-    mask2 = mask1 << 12
-    mask3 = mask2 << 12
-    mask4 = mask3 << 12
-    mask5 = mask4 << 12
-    mask6 = mask5 << 12
-    mask7 = mask6 << 12
-    mask8 = mask7 << 12
-    mask9 = mask8 << 12
-    mask10 = mask9 << 12
+    mask1 = 0b11111111
+    mask2 = mask1 << 8
+    mask3 = mask2 << 8
+    mask4 = mask3 << 8
+    mask5 = mask4 << 8
+    mask6 = mask5 << 8
+    mask7 = mask6 << 8
+    mask8 = mask7 << 8
 
 
     val1 = (curval & mask1)
-    val2 = ((curval & mask2) >> 12)
+    val2 = ((curval & mask2) >> 8)
+    val3 = ((curval & mask3) >> 8)
+    val4 = ((curval & mask4) >> 8)
+
+ 
 
 
 
-    value = (val1, val2)
+
+    value = (val1, val2, val3, val4)
     returnFrame = 0b0
     i = 0
-    maxAllowable = 1023
+    maxAllowable = 32767
     minAllowable = -maxAllowable
     for val in value:
         addValue = None
         if val <= avg/2 and val >= min:
-            addValue = round(val+(2*compression))
+            addValue = round(val*compression)
             if addValue > maxAllowable: addValue = maxAllowable
             if addValue < minAllowable: addValue = minAllowable
         elif val >= avg/2 and val <= avg:
-            addValue = round(val+(compression))
+            addValue = round(val*compression)
             if addValue > maxAllowable: addValue = maxAllowable
             if addValue < minAllowable: addValue = minAllowable
         elif val >= avg and val <= 1.5*avg:
-            addValue = round(val-(compression))
+            addValue = round(val*compression)
             if addValue > maxAllowable: addValue = maxAllowable
             if addValue < minAllowable: addValue = minAllowable
         elif val >= 1.5*avg and val <= max:
-            addValue = round(val-(2*compression))
+            addValue = round(val*compression)
             if addValue > maxAllowable: addValue = maxAllowable
             if addValue < minAllowable: addValue = minAllowable
         elif addValue is None: 
             addValue = round(val)
-        returnFrame = returnFrame | addValue << 12*i
+        returnFrame = returnFrame | addValue << 8*i
         i += 1
-    returnFrame = returnFrame.to_bytes(3, "little", signed=True)
+    returnFrame = returnFrame.to_bytes(8, "little", signed=True)
     return returnFrame
     
 
@@ -87,12 +90,12 @@ def compressWav(filename, compression):
     avg = audioop.avg(frames, sampWidth)
     wavRead.rewind()
 
-    readFrame = wavRead.readframes(1)
+    readFrame = wavRead.readframes(4)
     i = 0
     while readFrame:
         writeFrame = compressFromFrames(readFrame, compression, min, max, avg)
         wavWrite.writeframes(writeFrame)
-        readFrame = wavRead.readframes(1)
+        readFrame = wavRead.readframes(4)
         i += 1
 
 

@@ -4,11 +4,18 @@ L = length(y) - 1;
 t = (0:L);
 
 figure
-plot(t, y(:, 1))
+
 grid on
+plot(t, y(:, 1))
 hold on
 plot(t, y(:, 2))
-hold off
+title("Left and Right Channel Signal Compression = 1")
+xlabel("Sample")
+ylabel("Magnitude")
+
+
+
+
 
 f = fft(y);
 
@@ -17,3 +24,10 @@ freq = Fs*((0:L)/L);
 figure
 plot(freq, f(:, 1))
 plot(freq, f(:, 2))
+title("Frequency Response Compression = 1")
+xlabel("Frequency")
+ylabel("Magnitude")
+
+
+
+
