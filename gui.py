@@ -40,15 +40,19 @@ var_mode = tk.StringVar()
 r1 = tk.Radiobutton(root,text='Gain Control', value="A", variable=var_mode, font=('Arial', 11)).place(x=160, y=225)
 r2 = tk.Radiobutton(root,text='Filters', value="B", variable=var_mode, font=('Arial', 11)).place(x=160, y=245)
 
+var_compression = tk.IntVar()
+cb1 = tk.Checkbutton(root,text='Compression',font=('Arial', 11),variable=var_compression,onvalue=1,offvalue=0).place(x=280,y=225)
+
 var_extent = tk.StringVar()
 sc = tk.Scale(root,variable=var_extent,from_=0,to=10,orient=tk.HORIZONTAL,length=200,showvalue=0,tickinterval=1,resolution=0.1).place(x=170, y=270)
 
 # value to use:
-# add file (String): entry_add_file.get()
-# save as (String): entry_save_as.get()
-# mode (String): var_mode.get()
+# add file (String): entry_add_file.get()       # input file name without '.wav'
+# save as (String): entry_save_as.get()         # save as file name without '.wav'
+# mode (String): var_mode.get()                 # 'A' is gain control and 'B' is filters
 # extent or type (String): var_extent.get()     # a number from 0 to 10 in 1 decimal place
-# output (string): var_output.get()
+# output (string): var_output.get()             # output file name without '.wav'
+# compression (int): var_compression.get()      # '1' is on and '0' is off
 def Play_input():
     # TODO: To play the input wav file.
     pass

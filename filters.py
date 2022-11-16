@@ -1,7 +1,10 @@
 import wave
-import audioop
+import numpy
+import math
+from scipy import signal
 
 # Written by Harry Poulos z5257055
+# With code partially copied from https://www.geeksforgeeks.org/digital-low-pass-butterworth-filter-in-python/
 
 # returns bistream if in bitstream mode, None otherwise.
 # Call this function to use filters.
@@ -19,16 +22,35 @@ def filterFromFrames(curFrames, filter):
     maxAllowable = 32767
     minAllowable = -maxAllowable
 
-    val1 = (curFrames[1] << 8) + curFrames[0]
-    val2 = (curFrames[3] << 8) + curFrames[2]
+    values = {'val0': 0, 'val1': 0, 'val2': 0, 'val3': 0, 'val4': 0, 'val5': 0, 'val6': 0, 'val7': 0}
 
-    if (val1 > maxAllowable): val1 -= 2**16
-    if (val2 > maxAllowable): val2 -= 2**16
+    for i in range(len(values)):
+        temp1 = curFrames[i + 1]
+        temp2 = curFrames[i]
+        values['val' + str(i)] = (int(temp1) << 8) + int(temp2)
+        if (values['val' + str(i)] > maxAllowable): values['val' + str(i)] -= 2**16
+        if (values['val' + str(i)] > maxAllowable): values['val' + str(i)] -= 2**16
 
-    value = (val1, val2)
+
+
+    num, den = signal.butter(2, 0.5)
     
+    input = []
 
-    returnFrame = returnFrame.to_bytes(4, "little", signed=True)
+    for valKey in values.keys():
+        input.append(values[valKey])
+
+
+    output = signal.lfilter(num, den, input)
+
+    i = 0
+    while i < 8:
+        returnFrame += (int(output[i + 1]) << 8*(i + 1)) + (int(output[i]) << 8*i)
+        i += 2
+
+    returnFrame = round(returnFrame)
+
+    returnFrame = returnFrame.to_bytes(16, "little", signed=True)
     return returnFrame
     
 
@@ -69,12 +91,12 @@ def filterWav(filename, filter):
     wavRead.rewind()
 
 
-    readFrame = wavRead.readframes(1)
+    readFrame = wavRead.readframes(4)
     i = 0
     while readFrame:
         writeFrame = filterFromFrames(readFrame, filter)
         wavWrite.writeframes(writeFrame)
-        readFrame = wavRead.readframes(1)
+        readFrame = wavRead.readframes(4)
         i += 1
 
 
@@ -84,10 +106,10 @@ def filterWav(filename, filter):
 if __name__ == "__main__":
     print("Enter file name")
     filename = 'Free_Test_Data_500KB_WAV.wav'
-    print("Enter compress amount")
-    c = input()
-    c = float(c)
-    filter('f', filename, c)
+    print("Enter filter type")
+    t = input()
+    t = str(t)
+    filter('f', filename, t)
 
 
 
