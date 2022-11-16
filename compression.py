@@ -1,10 +1,12 @@
 import wave
 import audioop
 
+# Written by Harry Poulos z5257055
 
 # returns bistream if in bitstream mode, None otherwise.
 # Call this function to use Compression.
 def compress(mode, data, compression):
+    if compression == 0: compression = 0.0001
     if mode == 'b':
             return compressBitstream(data, compression)
     elif mode == 'f':

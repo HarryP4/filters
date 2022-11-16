@@ -1,6 +1,7 @@
 import wave
 import audioop
 
+# Written by Harry Poulos z5257055
 
 # returns bistream if in bitstream mode, None otherwise.
 def gain(mode, data, gain):
