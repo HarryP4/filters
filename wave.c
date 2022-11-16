@@ -1,5 +1,5 @@
 /* 
-code obtained from: 
+used code from: 
 https://topic.alibabacloud.com/a/c-language-parsing-wav-audio-files_1_31_30000716.html
 */
 
@@ -7,7 +7,7 @@ https://topic.alibabacloud.com/a/c-language-parsing-wav-audio-files_1_31_3000071
 
 
 
-Wav readWav() {
+char* readWav() {
     FILE *fp = NULL;
     FILE *fp1 = NULL;
     
@@ -51,26 +51,45 @@ Wav readWav() {
     
     printf("\n");
 
-    char* wavData = malloc(sizeof(data.Subchunk2Size));
 
-    if (wavData == NULL) {
-        printf("MALLOC FAILED");
-        exit(1);
-    }
+    printf("chunks is %d and size of chunks is %d\n", data.Subchunk2Size, sizeof(data.Subchunk2Size));  
+    char wavData[data.Subchunk2Size];
 
+    printf("wavData address is: %x\n", &wavData);
+    printf("wavData size is: %d\n", sizeof(wavData));
+
+    fseek(fp, 0, SEEK_SET);
     fp1 = fopen("coutput.txt", "w+");
 
-    printf("this executed1\n");
-    fread(&wavData, sizeof(char), sizeof(data.Subchunk2Size), fp);
-    printf("this executed2\n");
+    fread(wavData, 1, data.Subchunk2Size, fp);
+
+    uint32_t e;
     int i = 0;
-    while (wavData != NULL) {
-        fprintf(fp1, "%c\n", wavData[i]);
+
+    while (i < sizeof(wavData)) {
+        e = wavData[i];
+        //fprintf(fp1, "%x", e);
+        
+        while (e) {
+            if (e & 1)
+                fprintf(fp1, "1");
+            else
+                fprintf(fp1, "0");
+
+            e >>= 1;
+        }
+
+        if (!(i % fmt.NumChannels) && i != 0) {
+            fprintf(fp1, "\n");
+        }
         i++;
     }
 
 
-    return wav;
+    fclose(fp);
+    fclose(fp1);
+
+    return wavData;
 }
 
 

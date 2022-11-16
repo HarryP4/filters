@@ -13,25 +13,18 @@ def compress(mode, data, compression):
 
 def compressFromFrames(curFrames, compression, min, max, avg):
 
-    curval = int.from_bytes(curFrames, "little")
+    curval = int.from_bytes(curFrames, "little", signed=True)
     
-    mask1 = 0b111111111111
-    mask2 = mask1 << 12
-    mask3 = mask2 << 12
-    mask4 = mask3 << 12
-    mask5 = mask4 << 12
-    mask6 = mask5 << 12
-    mask7 = mask6 << 12
-    mask8 = mask7 << 12
+    mask1 = 0b1111111111111111
+    mask2 = mask1 << 16
+
 
 
     val1 = (curval & mask1)
-    val2 = ((curval & mask2) >> 12)
-    #val3 = ((curval & mask3) >> 12)
-    #val4 = ((curval & mask4) >> 8)
+    val2 = ((curval & mask2) >> 16)
 
  
-    (localmin, localmax) = audioop.minmax(curFrames, 2)
+    #(localmin, localmax) = audioop.minmax(curFrames, 2)
 
 
 
@@ -58,11 +51,13 @@ def compressFromFrames(curFrames, compression, min, max, avg):
             addValue = round(val/(1.1*compression))
             if addValue > maxAllowable: addValue = maxAllowable
             if addValue < minAllowable: addValue = minAllowable
+        
         elif addValue is None: 
-            addValue = round(val)
-        returnFrame = returnFrame | (addValue << 12*i)
+            addValue = round(val) & 0b1111111111111111
+        returnFrame = returnFrame + (addValue << 16*i)
         i += 1
-    returnFrame = returnFrame.to_bytes(4, "little", signed=True)
+
+    returnFrame = returnFrame.to_bytes(4, "little", signed=False)
     return returnFrame
     
 
@@ -90,6 +85,13 @@ def compressWav(filename, compression):
     avg = audioop.avg(frames, sampWidth)
     wavRead.rewind()
 
+
+#    while True:
+#        frames = bytearray(wavRead.readframes(1024))
+#        if not frames:
+#            break
+
+
     readFrame = wavRead.readframes(1)
     i = 0
     while readFrame:
@@ -109,5 +111,7 @@ if __name__ == "__main__":
     c = input()
     c = float(c)
     compress('f', filename, c)
+
+
 
 

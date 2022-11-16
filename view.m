@@ -4,10 +4,11 @@ L = length(y) - 1;
 t = (0:L);
 
 figure
-
+subplot 211
 grid on
 plot(t, y(:, 1))
-hold on
+
+subplot 212
 plot(t, y(:, 2))
 title("Left and Right Channel Signal Compression = 1")
 xlabel("Sample")
