@@ -3,15 +3,16 @@ import audioop
 
 
 # returns bistream if in bitstream mode, None otherwise.
+# Call this function to use Compression.
 def compress(mode, data, compression):
     if mode == 'b':
-            sampWidth = 2
-            compressBitstream(data, compression, sampWidth)
+            return compressBitstream(data, compression)
     elif mode == 'f':
         compressWav(data, compression)
+    return None
 
 
-def compressFromFrames(curFrames, compression, min, max, avg):
+def compressFromFrames(curFrames, compression, min, max):
 
     returnFrame = 0b0
     maxAllowable = 32767
@@ -68,11 +69,25 @@ def compressFromFrames(curFrames, compression, min, max, avg):
     
 
 
+# bistream should be 16 bytes long at a time
+# Returns an array of 16 bytes
+def compressBitstream(bitstream, compression):
+    tempBits = [0]
+    tempBits.clear()
+    i = 0
+    max = 0
+    min = 0
+    while (i < 16):
+        bits = bitstream & (0b11111111 << 8*i)
+        if bits > max: max = bits
+        if bits < min: min = bits
+        i += 1
 
-def compressBitstream(bitstream, compression, sampWidth):
-    while not (bitstream == None):
-        return compressFromFrames(bitstream, compression, sampWidth)
-    return None
+    while (i < 8):
+        bits = bitstream & (0b1111111111111111 << 16*i)
+        i += 1
+        tempBits.append(compressFromFrames(bits, compression, min, max))
+    return tempBits
 
 def compressWav(filename, compression):
 
@@ -88,14 +103,13 @@ def compressWav(filename, compression):
 
     frames = wavRead.readframes(nframes)
     (min, max) = audioop.minmax(frames, sampWidth)
-    avg = audioop.avg(frames, sampWidth)
     wavRead.rewind()
 
 
     readFrame = wavRead.readframes(1)
     i = 0
     while readFrame:
-        writeFrame = compressFromFrames(readFrame, compression, min, max, avg)
+        writeFrame = compressFromFrames(readFrame, compression, min, max)
         wavWrite.writeframes(writeFrame)
         readFrame = wavRead.readframes(1)
         i += 1
