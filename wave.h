@@ -34,11 +34,14 @@ typedef struct WAV_data {
 //    Data_block_t block;
 } Data_t;
 
-//typedef struct WAV_data_block {
-//} Data_block_t;
 
 typedef struct WAV_format {
    RIFF_t riff;
    FMT_t fmt;
    Data_t data;
 } Wav;
+
+typedef struct WAV_File {
+    Wav header;
+    char data;
+} WAV_File;

@@ -7,7 +7,7 @@ https://topic.alibabacloud.com/a/c-language-parsing-wav-audio-files_1_31_3000071
 
 
 
-char* readWav() {
+WAV_File readWav() {
     FILE *fp = NULL;
     FILE *fp1 = NULL;
     
@@ -58,18 +58,21 @@ char* readWav() {
     printf("wavData address is: %x\n", &wavData);
     printf("wavData size is: %d\n", sizeof(wavData));
 
-    fseek(fp, 0, SEEK_SET);
+    //fseek(fp, 0, SEEK_CUR);
     fp1 = fopen("coutput.txt", "w+");
+    
 
     fread(wavData, 1, data.Subchunk2Size, fp);
 
-    uint32_t e;
+    char e;
     int i = 0;
+
 
     while (i < sizeof(wavData)) {
         e = wavData[i];
-        //fprintf(fp1, "%x", e);
+        fprintf(fp1, "%x", e);
         
+        /* prints in binary
         while (e) {
             if (e & 1)
                 fprintf(fp1, "1");
@@ -78,25 +81,56 @@ char* readWav() {
 
             e >>= 1;
         }
-
-        if (!(i % fmt.NumChannels) && i != 0) {
+        */
+        if (!( (i + 1) % fmt.NumChannels) && i != 0) {
             fprintf(fp1, "\n");
         }
         i++;
     }
 
+    WAV_File wavFile = {wav, wavData};
 
     fclose(fp);
     fclose(fp1);
 
-    return wavData;
+    return wavFile;
+}
+
+void writeToWav(Wav wav, char* wavData) {
+    FILE *fp = NULL;
+    fp = fopen("coutput.wav", "w+");
+
+    
+
+    fprintf(fp, "%x", wav);
+
+    int i = 0;
+    while (i < sizeof(wavData)) {
+        fprintf(fp, "%x", wavData[i]);
+
+        /* prints in binary
+        while (e) {
+            if (e & 1)
+                fprintf(fp1, "1");
+            else
+                fprintf(fp1, "0");
+
+            e >>= 1;
+        }
+        */
+        i++;
+    }
+
+    return;
 }
 
 
+
 int main (void) {
+    WAV_File wavData;
+    wavData = readWav();
 
-    readWav();
-
+    writeToWav(wavData.header, wavData.data);
     return 0;
 
 }

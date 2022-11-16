@@ -13,51 +13,57 @@ def compress(mode, data, compression):
 
 def compressFromFrames(curFrames, compression, min, max, avg):
 
-    curval = int.from_bytes(curFrames, "little", signed=True)
-    
-    mask1 = 0b1111111111111111
-    mask2 = mask1 << 16
-
-
-
-    val1 = (curval & mask1)
-    val2 = ((curval & mask2) >> 16)
-
- 
-    #(localmin, localmax) = audioop.minmax(curFrames, 2)
-
-
-
-    value = (val1, val2)
     returnFrame = 0b0
-    i = 0
     maxAllowable = 32767
     minAllowable = -maxAllowable
-    for val in value:
-        addValue = None
-        if val <= avg/2 and val >= min:
-            addValue = round(val*1.1*compression)
-            if addValue > maxAllowable: addValue = maxAllowable
-            if addValue < minAllowable: addValue = minAllowable
-        elif val >= avg/2 and val <= avg:
-            addValue = round(val*compression)
-            if addValue > maxAllowable: addValue = maxAllowable
-            if addValue < minAllowable: addValue = minAllowable
-        elif val >= avg and val <= 1.5*avg:
-            addValue = round(val/compression)
-            if addValue > maxAllowable: addValue = maxAllowable
-            if addValue < minAllowable: addValue = minAllowable
-        elif val >= 1.5*avg and val <= max:
-            addValue = round(val/(1.1*compression))
-            if addValue > maxAllowable: addValue = maxAllowable
-            if addValue < minAllowable: addValue = minAllowable
-        
-        elif addValue is None: 
-            addValue = round(val) & 0b1111111111111111
-        returnFrame = returnFrame + (addValue << 16*i)
-        i += 1
 
-    returnFrame = returnFrame.to_bytes(4, "little", signed=False)
+    val1 = (curFrames[1] << 8) + curFrames[0]
+    val2 = (curFrames[3] << 8) + curFrames[2]
+
+    if (val1 > maxAllowable): val1 -= 2**16
+    if (val2 > maxAllowable): val2 -= 2**16
+
+    value = (val1, val2)
+    
+    maxIncrementer = max/32
+    minIncrementer = min/32
+
+    
+    j = 0
+    for val in value:
+        i = 0
+        while i < 32:
+            if i >= 16:
+                if val >= maxIncrementer*i and val <= maxIncrementer*(i+1):
+                    addValue = round(val/(compression))
+                    if addValue < maxIncrementer*(i-5): addValue = maxIncrementer*(i-5)
+                    if addValue > maxIncrementer*(i+6): addValue = maxIncrementer*(i+6)
+            else:
+                if val >= maxIncrementer*i and val <= maxIncrementer*(i+1):
+                    addValue = round(val*(compression))
+                    if addValue < maxIncrementer*(i-5): addValue = maxIncrementer*(i-5)
+                    if addValue > maxIncrementer*(i+6): addValue = maxIncrementer*(i+6)
+            i += 1
+        
+        i = 0
+        while i < 32:
+            if i >= 16:
+                if val <= minIncrementer*i and val >= minIncrementer*(i+1):
+                    addValue = round(val/(compression))
+                    if addValue > minIncrementer*(i-5): addValue = minIncrementer*(i-5)
+                    if addValue < minIncrementer*(i+6): addValue = minIncrementer*(i+6)
+            else:
+                if val <= minIncrementer*i and val >= minIncrementer*(i+1):
+                    addValue = round(val*(compression))
+                    if addValue > minIncrementer*(i-5): addValue = minIncrementer*(i-5)
+                    if addValue < minIncrementer*(i+6): addValue = minIncrementer*(i+6)
+            i += 1
+        if addValue > maxAllowable: addValue = maxAllowable
+        if addValue < minAllowable: addValue = minAllowable
+        returnFrame = returnFrame + (round(addValue) << 16*j)
+        j += 1
+
+    returnFrame = returnFrame.to_bytes(4, "little", signed=True)
     return returnFrame
     
 
@@ -84,12 +90,6 @@ def compressWav(filename, compression):
     (min, max) = audioop.minmax(frames, sampWidth)
     avg = audioop.avg(frames, sampWidth)
     wavRead.rewind()
-
-
-#    while True:
-#        frames = bytearray(wavRead.readframes(1024))
-#        if not frames:
-#            break
 
 
     readFrame = wavRead.readframes(1)
